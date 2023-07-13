@@ -1,7 +1,7 @@
-from. import bdg_panel
+from . import bdg
 
 modules=[
-    bdg_panel
+    bdg
     ]
 
 def register():

@@ -2,18 +2,17 @@ bl_info = {
     "name": "Backdrop Generator",
     "author": "Sobin Johnson",
     "version": (1, 0),
-    "blender": (3, 41, 0),
+    "blender": (3, 0, 0),
     "location": "View3D",
     "description": "A backdrop generating tool to create a plesing backdrop and lighting for your product render",
     "category": "Object",
 }
 
-from . import scatter,panel
+from . import bdg_source
 
-modules = (
-    scatter,
-    panel
-)
+modules = [
+    bdg_source
+]
 
 
 def register():

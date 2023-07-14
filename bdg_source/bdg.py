@@ -208,20 +208,18 @@ class bdg_props(bpy.types.PropertyGroup):
     def update_seed(self,context) :
         
         global instance_num
-        all_objects = bpy.data.objects
-        for obj in all_objects:
+        for obj in bpy.data.objects:
             if obj.name.startswith("bdg_instance_"+str(instance_num)):
                 bpy.data.objects.remove(obj, do_unlink=True)
         backdrop_gen.scatter_obj(bpy.context)
         
-        all_objects = bpy.data.objects
         collection = bpy.data.collections.get("bdg_collection")
         if collection == None :
             collection = bpy.data.collections.new("bdg_collection")
 
         bdg_objects = []
 
-        for obj in all_objects:
+        for obj in bpy.data.objects:
             if obj.name.startswith("bdg_instance"):
                 bdg_objects.append(obj)
         
@@ -257,7 +255,14 @@ class backdrop_gen(bpy.types.Operator):
     def scatter_obj(self):
         context=bpy.context
         global instance_num
-        
+        bdg_instance_name = []
+        if bpy.data.collections.get("bdg_collection"):
+            for obj in bpy.data.collections["bdg_collection"].objects:
+                if obj.name.startswith("bdg_instance_"):
+                    bdg_instance_name.append(obj.name)
+            bdg_instance_name = list(sorted(bdg_instance_name))
+            if len(bdg_instance_name)>0:
+                instance_num=int(bdg_instance_name[-1][13])
         props=bpy.context.scene.bdg_props
         bg_color = props.bg_color
         instance_obj = props.instance_obj
@@ -574,12 +579,10 @@ class backdrop_gen(bpy.types.Operator):
                     frame_num+=(frame_end-frame_start)//3
         
         bpy.context.scene.frame_set(0)
-        
-        all_objects = bpy.data.objects
 
         bdg_objects = []
 
-        for obj in all_objects:
+        for obj in bpy.data.objects:
             if obj.name.startswith("bdg_"):
                 bdg_objects.append(obj)
 
@@ -609,6 +612,14 @@ class obj_scatter(bpy.types.Operator):
     def execute(self, context):
         global instance_num
         global is_visible
+        bdg_instance_name = []
+        if bpy.data.collections.get("bdg_collection"):
+            for obj in bpy.data.collections["bdg_collection"].objects:
+                if obj.name.startswith("bdg_instance_"):
+                    bdg_instance_name.append(obj.name)
+            bdg_instance_name = list(sorted(bdg_instance_name))
+            if len(bdg_instance_name)>0:
+                instance_num=int(bdg_instance_name[-1][13])
         is_visible=True
         props=bpy.context.scene.bdg_props
         bg_color = props.bg_color
@@ -769,14 +780,13 @@ class obj_scatter(bpy.types.Operator):
                                 so.keyframe_insert(data_path="rotation_euler",index=2)
                             
             bpy.context.scene.frame_set(0)
-        all_objects = bpy.data.objects
         collection = bpy.data.collections.get("bdg_collection")
         if collection == None :
             collection = bpy.data.collections.new("bdg_collection")
 
         bdg_objects = []
 
-        for obj in all_objects:
+        for obj in bpy.data.objects:
             if obj.name.startswith("bdg_instance"):
                 bdg_objects.append(obj)
         
@@ -833,7 +843,14 @@ class del_obj(bpy.types.Operator):
     
     def execute(self,context):
         global instance_num
-        
+        bdg_instance_name = []
+        if bpy.data.collections.get("bdg_collection"):
+            for obj in bpy.data.collections["bdg_collection"].objects:
+                if obj.name.startswith("bdg_instance_"):
+                    bdg_instance_name.append(obj.name)
+            bdg_instance_name = list(sorted(bdg_instance_name))
+            if len(bdg_instance_name)>0:
+                instance_num=int(bdg_instance_name[-1][13])
         objects_to_delete = []
 
         for obj in bpy.data.objects:

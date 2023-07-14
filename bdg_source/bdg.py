@@ -2,12 +2,10 @@ bl_info = {
     "name": "Backdrop Generator",
     "author": "Sobin Johnson",
     "version": (1, 0),
-    "blender": (2, 80, 0),
+    "blender": (3, 0, 0),
     "location": "View3D",
-    "description": "",
-    "warning": "",
-    "doc_url": "",
-    "category": "",
+    "description": "A backdrop generating tool to create a plesing backdrop and lighting for your product render",
+    "category": "Object",
 }
 
 import bpy
@@ -40,15 +38,14 @@ class bdg_props(bpy.types.PropertyGroup):
         default=True)
         
     options_type =   [
-                ("RANDOM", "Random", "Generate random pattern"),
-                ("UNIFORM", "Uniform", "Generate uniform pattern")                
+                ("UNIFORM", "Uniform", "Generate uniform pattern"),
+                ("RANDOM", "Random", "Generate random pattern")
                 ]
                 
     type: bpy.props.EnumProperty(
     items=options_type,
     name="Type",
-    description="Select the scatter distribution type",
-    default="RANDOM"
+    description="Select the scatter distribution type"
     )
     
     plat_color: bpy.props.FloatVectorProperty(
@@ -211,8 +208,6 @@ class bdg_props(bpy.types.PropertyGroup):
     def update_seed(self,context) :
         
         global instance_num
-        global is_visible
-        is_visible=True
         all_objects = bpy.data.objects
         for obj in all_objects:
             if obj.name.startswith("bdg_instance_"+str(instance_num)):
@@ -294,7 +289,6 @@ class backdrop_gen(bpy.types.Operator):
         
         frame_start=bpy.context.scene.frame_start
         frame_end=bpy.context.scene.frame_end
-        fps=bpy.context.scene.render.fps
         if instance_obj== None:
             is_obj=False
         else:
@@ -314,7 +308,8 @@ class backdrop_gen(bpy.types.Operator):
                 so.modifiers["Array"].count = count[0]
                 so.modifiers["Array.001"].count = count[1]
                                 
-            else:    
+            else:
+                key=(frame_end-frame_start)//8   
                 for i in range(num):
                     frame_num=0
                     bpy.context.scene.frame_set(frame_num)
@@ -343,15 +338,15 @@ class backdrop_gen(bpy.types.Operator):
                         bpy.context.scene.frame_set(frame_num)
                         so.keyframe_insert(data_path="location",index=0)
                         so.keyframe_insert(data_path="rotation_euler",index=0)
-                        frame_num+=fps
+                        frame_num+=key
                         bpy.context.scene.frame_set(frame_num)
                         so.keyframe_insert(data_path="location",index=1)
                         so.keyframe_insert(data_path="rotation_euler",index=1)
-                        frame_num+=fps
+                        frame_num+=key
                         bpy.context.scene.frame_set(frame_num)
                         so.keyframe_insert(data_path="location",index=2)
                         so.keyframe_insert(data_path="rotation_euler",index=2)
-                        frame_num+=fps*3
+                        frame_num+=key*3
                         loc_data.append((x,y,z))
                         rot_data.append((math.radians(x_rot),math.radians(y_rot),math.radians(z_rot)))
                         
@@ -377,44 +372,45 @@ class backdrop_gen(bpy.types.Operator):
                             #so.keyframe_insert(data_path="rotation_euler",index=-1)
                             so.keyframe_insert(data_path="location",index=0)
                             so.keyframe_insert(data_path="rotation_euler",index=0)
-                            frame_num-=fps
+                            frame_num-=key
                             bpy.context.scene.frame_set(frame_num)
                             so.keyframe_insert(data_path="location",index=1)
                             so.keyframe_insert(data_path="rotation_euler",index=1)
-                            frame_num+=fps*2
+                            frame_num+=key*2
                             bpy.context.scene.frame_set(frame_num)
                             so.keyframe_insert(data_path="location",index=2)
                             so.keyframe_insert(data_path="rotation_euler",index=2)
-                            frame_num+=fps*4
+                            frame_num+=key*4
                             seed+=100
                             random.seed(seed)
                         else:
-                            exp_frame=frame_num-5*fps
+                            exp_frame=frame_num-5*key
                             frame_num=frame_end
                             so.location=loc_data[0]
                             so.rotation_euler=rot_data[0]
                             bpy.context.scene.frame_set(frame_num)
                             so.keyframe_insert(data_path="location",index=0)
                             so.keyframe_insert(data_path="rotation_euler",index=0)
-                            frame_num+=fps
+                            frame_num+=key
                             bpy.context.scene.frame_set(frame_num)
                             so.keyframe_insert(data_path="location",index=1)
                             so.keyframe_insert(data_path="rotation_euler",index=1)
-                            frame_num+=fps
+                            frame_num+=key
                             bpy.context.scene.frame_set(frame_num)
                             so.keyframe_insert(data_path="location",index=2)
                             so.keyframe_insert(data_path="rotation_euler",index=2)
                             frame_num=frame_start-frame_end+exp_frame
+                            
                             so.location=loc_data[1]
                             so.rotation_euler=rot_data[1]
                             bpy.context.scene.frame_set(frame_num)
                             so.keyframe_insert(data_path="location",index=0)
                             so.keyframe_insert(data_path="rotation_euler",index=0)
-                            frame_num-=fps
+                            frame_num-=key
                             bpy.context.scene.frame_set(frame_num)
                             so.keyframe_insert(data_path="location",index=1)
                             so.keyframe_insert(data_path="rotation_euler",index=1)
-                            frame_num+=2*fps
+                            frame_num+=2*key
                             bpy.context.scene.frame_set(frame_num)
                             so.keyframe_insert(data_path="location",index=2)
                             so.keyframe_insert(data_path="rotation_euler",index=2)
@@ -493,7 +489,6 @@ class backdrop_gen(bpy.types.Operator):
         #camera 
         bpy.ops.object.camera_add(enter_editmode=False, align='VIEW', location=(0, -4.62028, 0.590903), rotation=(1.5708, 0, 0), scale=(1, 1, 1))
         bpy.context.object.name = "bdg_camera"
-        bpy.context.scene.camera = bpy.data.objects.get("bdg_camera")
         bpy.ops.object.select_all(action='DESELECT')
 
         #BG creation
@@ -656,14 +651,7 @@ class obj_scatter(bpy.types.Operator):
                 
         if is_obj:
             if type=="UNIFORM":
-                
                 so = bpy.data.objects.new("bdg_instance_"+str(instance_num)+"_uniform", instance_obj_list[-1].data.copy())
-                collection = bpy.data.collections.get("bdg_collection")
-                if collection == None :
-                    collection = bpy.data.collections.new("bdg_collection")
-                    bpy.context.scene.collection.children.link(collection)
-                    collection = bpy.data.collections.get("bdg_collection")
-                collection.objects.link(so)
                 so.location=(loc_uni[0],loc_uni[1],loc_uni[2])
                 so.data = instance_obj_list[-1].data
                 so.modifiers.new(name="Array", type='ARRAY')
@@ -673,107 +661,130 @@ class obj_scatter(bpy.types.Operator):
                 so.modifiers["Array.001"].relative_offset_displace[2] = offset[1]
                 so.modifiers["Array"].count = count[0]
                 so.modifiers["Array.001"].count = count[1]
-            else: 
+                                
+            else:
+                key=(frame_end-frame_start)//8   
                 for i in range(num):
                     frame_num=0
                     bpy.context.scene.frame_set(frame_num)
-                    r_scale=random.uniform(1-scale,1)
-                    x_rot=random.uniform(0,360*rot_randomness)
-                    y_rot=random.uniform(0,360*rot_randomness)
-                    z_rot=random.uniform(0,360*rot_randomness)
-                    x=random.uniform(-1.5*spread_x,1.5*spread_x)
+                    r_scale=round(random.uniform(1-scale,1),4)
+                    x_rot=round(random.uniform(-180*rot_randomness,180*rot_randomness),4)
+                    y_rot=round(random.uniform(-180*rot_randomness,180*rot_randomness),4)
+                    z_rot=round(random.uniform(-180*rot_randomness,180*rot_randomness),4)
+                    x=round(random.uniform(-1.5*spread_x,1.5*spread_x),4)
                     if is_front:
-                        y=random.uniform(-4,4)
+                        y=round(random.uniform(-4,4),4)
                     else:
-                        y=random.uniform(plat_rad+0.5,4)
-                    z=random.uniform(0.3,2*spread_z)
+                        y=round(random.uniform(plat_rad+0.5,4),4)
+                    z=round(random.uniform(0.3,2*spread_z),4)
                     so = bpy.data.objects.new("bdg_instance_"+str(instance_num), instance_obj_list[-1].data.copy())
                     so.data = instance_obj_list[-1].data
-                    collection = bpy.data.collections.get("bdg_collection")
-                    if collection == None :
-                        collection = bpy.data.collections.new("bdg_collection")
-                        bpy.context.scene.collection.children.link(collection)
-                        collection = bpy.data.collections.get("bdg_collection")
-                    collection.objects.link(so)
+                    
                     so.location=(x,y,z)
-                    so.rotation_euler=(x_rot,y_rot,z_rot)
+                    so.rotation_euler=(math.radians(x_rot),math.radians(y_rot),math.radians(z_rot))
                     so.scale=(r_scale,r_scale,r_scale)
+                    
                     if is_anim:
                         loc_data=[]
                         rot_data=[]
+                        #so.keyframe_insert(data_path="location",index=-1)
+                        #so.keyframe_insert(data_path="rotation_euler",index=-1)
+                        bpy.context.scene.frame_set(frame_num)
                         so.keyframe_insert(data_path="location",index=0)
                         so.keyframe_insert(data_path="rotation_euler",index=0)
-                        frame_num+=fps
+                        frame_num+=key
                         bpy.context.scene.frame_set(frame_num)
                         so.keyframe_insert(data_path="location",index=1)
                         so.keyframe_insert(data_path="rotation_euler",index=1)
-                        frame_num+=fps
+                        frame_num+=key
                         bpy.context.scene.frame_set(frame_num)
                         so.keyframe_insert(data_path="location",index=2)
                         so.keyframe_insert(data_path="rotation_euler",index=2)
-                        frame_num+=fps*3
+                        frame_num+=key*3
                         loc_data.append((x,y,z))
                         rot_data.append((math.radians(x_rot),math.radians(y_rot),math.radians(z_rot)))
                         
                         #for j in range(4):
                         while (frame_num<frame_end):
                             bpy.context.scene.frame_set(frame_num)
-                            x_dev=obj_speed*random.uniform(-0.2,0.2)
-                            y_dev=obj_speed*random.uniform(-0.2,0.2)
-                            z_dev=obj_speed*random.uniform(-0.2,0.2)
+                            x_dev=round(obj_speed*random.uniform(-0.4,0.4),4)
+                            y_dev=round(obj_speed*random.uniform(-0.4,0.4),4)
+                            z_dev=round(obj_speed*random.uniform(-0.4,0.4),4)
                             so.location=(x+x_dev,y+y_dev,z+y_dev)
-                            scale_dev=random.uniform(-0.1,0.1)
-                            rot_dev=random.uniform(0,180*obj_rot_speed)
-                            while (rot_dev<30):
-                                rot_dev=random.uniform(-90*obj_rot_speed,90*obj_rot_speed)
+                            #so.location=(x+obj_speed*random.uniform(-0.2,0.2),y+obj_speed*random.uniform(-0.2,0.2),z+obj_speed*random.uniform(0,0.2))
+                            scale_dev=round(random.uniform(-0.1,0.1),4)
+                            rot_dev=round(random.uniform(-180*obj_rot_speed,180*obj_rot_speed),4)
+                            while (rot_dev<30 and rot_dev>-30 and 180*obj_rot_speed>30):
+                                rot_dev=round(random.uniform(-90*obj_rot_speed,90*obj_rot_speed),4)
                             so.scale=(r_scale+scale_dev,r_scale+scale_dev,r_scale+scale_dev)
                             so.rotation_euler=(math.radians(x_rot+rot_dev),math.radians(y_rot+rot_dev),math.radians(z_rot+rot_dev))
                             loc_data.append((x+x_dev,y+y_dev,z+y_dev))
                             rot_data.append((math.radians(x_rot+rot_dev),math.radians(y_rot+rot_dev),math.radians(z_rot+rot_dev)))
+                            #frame_num+=((frame_end-frame_start)//3)+1
+                            #so.keyframe_insert(data_path="location",index=-1)
+                            #so.keyframe_insert(data_path="scale",index=-1)
+                            #so.keyframe_insert(data_path="rotation_euler",index=-1)
                             so.keyframe_insert(data_path="location",index=0)
                             so.keyframe_insert(data_path="rotation_euler",index=0)
-                            frame_num-=fps
+                            frame_num-=key
                             bpy.context.scene.frame_set(frame_num)
                             so.keyframe_insert(data_path="location",index=1)
                             so.keyframe_insert(data_path="rotation_euler",index=1)
-                            frame_num+=fps*2
+                            frame_num+=key*2
                             bpy.context.scene.frame_set(frame_num)
                             so.keyframe_insert(data_path="location",index=2)
                             so.keyframe_insert(data_path="rotation_euler",index=2)
-                            frame_num+=fps*4
+                            frame_num+=key*4
+                            
                         else:
+                            exp_frame=frame_num-5*key
                             frame_num=frame_end
                             so.location=loc_data[0]
                             so.rotation_euler=rot_data[0]
                             bpy.context.scene.frame_set(frame_num)
                             so.keyframe_insert(data_path="location",index=0)
                             so.keyframe_insert(data_path="rotation_euler",index=0)
-                            frame_num+=fps
+                            frame_num+=key
                             bpy.context.scene.frame_set(frame_num)
                             so.keyframe_insert(data_path="location",index=1)
                             so.keyframe_insert(data_path="rotation_euler",index=1)
-                            frame_num+=fps
+                            frame_num+=key
                             bpy.context.scene.frame_set(frame_num)
                             so.keyframe_insert(data_path="location",index=2)
                             so.keyframe_insert(data_path="rotation_euler",index=2)
-                            frame_num=frame_start-5*fps
-                            so.location=loc_data[1]
-                            so.rotation_euler=rot_data[1]
-                            bpy.context.scene.frame_set(frame_num)
-                            so.keyframe_insert(data_path="location",index=0)
-                            so.keyframe_insert(data_path="rotation_euler",index=0)
-                            frame_num-=fps
-                            bpy.context.scene.frame_set(frame_num)
-                            so.keyframe_insert(data_path="location",index=1)
-                            so.keyframe_insert(data_path="rotation_euler",index=1)
-                            frame_num+=2*fps
-                            bpy.context.scene.frame_set(frame_num)
-                            so.keyframe_insert(data_path="location",index=2)
-                            so.keyframe_insert(data_path="rotation_euler",index=2)
-                            print(loc_data)
+                            frame_num=frame_start-frame_end+exp_frame
+                            if len(loc_data)>1:
+                                so.location=loc_data[1]
+                                so.rotation_euler=rot_data[1]
+                                bpy.context.scene.frame_set(frame_num)
+                                so.keyframe_insert(data_path="location",index=0)
+                                so.keyframe_insert(data_path="rotation_euler",index=0)
+                                frame_num-=key
+                                bpy.context.scene.frame_set(frame_num)
+                                so.keyframe_insert(data_path="location",index=1)
+                                so.keyframe_insert(data_path="rotation_euler",index=1)
+                                frame_num+=2*key
+                                bpy.context.scene.frame_set(frame_num)
+                                so.keyframe_insert(data_path="location",index=2)
+                                so.keyframe_insert(data_path="rotation_euler",index=2)
                             
             bpy.context.scene.frame_set(0)
-                    
+        all_objects = bpy.data.objects
+        collection = bpy.data.collections.get("bdg_collection")
+        if collection == None :
+            collection = bpy.data.collections.new("bdg_collection")
+
+        bdg_objects = []
+
+        for obj in all_objects:
+            if obj.name.startswith("bdg_instance"):
+                bdg_objects.append(obj)
+        
+        for obj in bdg_objects:
+            if obj.name in bpy.context.collection.objects:
+                bpy.context.collection.objects.unlink(obj)
+            if obj.name not in collection.objects:
+                collection.objects.link(obj)          
         bpy.context.scene.frame_set(0)    
         return {'FINISHED'}
     
@@ -841,8 +852,7 @@ class hide_obj(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "object.hide_obj"
     bl_label = "Hide Objects" 
-    bl_options = {"REGISTER", "UNDO"}    
-    bl_description="Hides the scattered objects in viewport"    
+    bl_options = {"REGISTER", "UNDO"}       
     
     def execute(self,context):
         global is_visible
@@ -857,8 +867,7 @@ class unhide_obj(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "object.unhide_obj"
     bl_label = "Unhide Objects" 
-    bl_options = {"REGISTER", "UNDO"} 
-    bl_description="Unhides the scattered objects in viewport"         
+    bl_options = {"REGISTER", "UNDO"}       
     
     def execute(self,context):
 
@@ -882,7 +891,9 @@ class bdg_panel(bpy.types.Panel):
         
         obj = context.object
         layout = self.layout
+        frame_start=bpy.context.scene.frame_start
         props=bpy.context.scene.bdg_props
+        fps=bpy.context.scene.render.fps
         global is_visible
         row = layout.row()
         row.prop(props,"is_obj")
@@ -929,6 +940,8 @@ class bdg_panel(bpy.types.Panel):
         row.prop(props,"is_anim")
         if props.is_obj or props.is_plat:
             if props.is_anim:
+                row = layout.row()
+                row.label(text= "For smoother animation set endframe > {}".format(str(frame_start+8*fps)),icon="INFO")
                 if props.type=="RANDOM":
                     if props.is_obj and props.instance_obj is not None:
                         row = layout.row()
